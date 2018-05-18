@@ -1,0 +1,171 @@
+---
+title: "Project"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+##Install the package from Bioconductor repository:
+```{r}
+source("http://bioconductor.org/biocLite.R")
+biocLite("gdsfmt")
+biocLite("SNPRelate")
+```
+
+##Install the development version from Github:
+```{r}
+library("devtools")
+install_github("zhengxwen/gdsfmt")
+install_github("zhengxwen/SNPRelate")
+```
+
+## Load the R packages: gdsfmt and SNPRelate
+```{r}
+library(gdsfmt)
+library(SNPRelate)
+```
+
+```{r}
+library(SeqArray)
+vcf.fn <- "/Users/TRGN510/Downloads/ALL.wgs.phase1.projectConsensus.snps.sites.vcf.gz"
+seqVCF2GDS(vcf.fn, "test1.gds")
+```
+
+#Get Data
+```{r}
+genofile <- seqOpen("test.gds")
+```
+
+```{r}
+head(samp.id <- seqGetData(genofile, "sample.id"))
+```
+
+```{r}
+head(variant.id <- seqGetData(genofile, "variant.id"))
+```
+
+```{r}
+table(seqGetData(genofile, "chromosome"))
+```
+
+```{r}
+head(seqGetData(genofile, "allele"))
+```
+
+```{r}
+head(seqGetData(genofile, "annotation/info/GP"))
+```
+
+```{r}
+seqClose(genofile)
+```
+
+##LD-based SNP pruning
+```{r}
+set.seed(1000)
+snpset <- snpgdsLDpruning(genofile, ld.threshold=0.2)
+```
+
+```{r}
+names(snpset)
+```
+
+```{r}
+head(snpset$chr1)
+snpset.id <- unlist(snpset)
+```
+
+##Principal Component Analysis (PCA)
+# Run PCA
+```{r}
+pca <- snpgdsPCA(genofile, snp.id=snpset.id, num.thread=2)
+```
+
+# Make a data.frame
+```{r}
+tab <- data.frame(sample.id = pca$sample.id,
+    EV1 = pca$eigenvect[,1],    # the first eigenvector
+    EV2 = pca$eigenvect[,2],    # the second eigenvector
+    stringsAsFactors = FALSE)
+head(tab)
+```
+
+# Draw
+```{r}
+plot(tab$EV2, tab$EV1, xlab="eigenvector 2", ylab="eigenvector 1")
+```
+
+#Plot the principal component pairs for the first four PCs:
+```{r}
+lbls <- paste("PC", 1:4, "\n", format(pc.percent[1:4], digits=2), "%", sep="")
+pairs(pca$eigenvect[,1:4], col=tab$pop, labels=lbls)
+```
+
+
+#Parallel coordinates plot for the top principal components:
+```{r}
+library(MASS)
+datpop <- factor(pop_code)[match(pca$sample.id, sample.id)]
+parcoord(pca$eigenvect[,1:16], col=datpop)
+```
+
+# Get chromosome index
+```{r}
+chr <- read.gdsn(index.gdsn(genofile, "snp.chromosome"))
+CORR <- snpgdsPCACorr(pca, genofile, eig.which=1:4)
+```
+
+```{r}
+savepar <- par(mfrow=c(2,1), mai=c(0.45, 0.55, 0.1, 0.25))
+for (i in 1:2)
+{
+    plot(abs(CORR$snpcorr[i,]), ylim=c(0,1), xlab="", ylab=paste("PC", i),
+        col=chr, pch="+")
+}
+par(savepar)
+```
+
+
+# YRI samples
+```{r}
+sample.id <- read.gdsn(index.gdsn(genofile, "sample.id"))
+YRI.id <- sample.id[pop_code == "YRI"]
+```
+
+#Estimating IBD Using PLINK method of moments (MoM)
+# Estimate IBD coefficients
+```{r}
+ibd <- snpgdsIBDMoM(genofile, sample.id=YRI.id, snp.id=snpset.id, 
+                    maf=0.05, missing.rate=0.05, num.thread=2)
+```
+
+# Make a data.frame
+```{r}
+ibd.coeff <- snpgdsIBDSelection(ibd)
+head(ibd.coeff)
+```
+
+```{r}
+plot(ibd.coeff$k0, ibd.coeff$k1, xlim=c(0,1), ylim=c(0,1),
+    xlab="k0", ylab="k1", main="YRI samples (MoM)")
+lines(c(0,1), c(1,0), col="red", lty=2)
+```
+
+# Estimate IBD coefficients
+```{r}
+set.seed(100)
+snp.id <- sample(snpset.id, 1500)  # random 1500 SNPs
+ibd <- snpgdsIBDMLE(genofile, sample.id=YRI.id, snp.id=snp.id,
+    maf=0.05, missing.rate=0.05, num.thread=2)
+```
+
+# Make a data.frame
+```{r}
+ibd.coeff <- snpgdsIBDSelection(ibd)
+plot(ibd.coeff$k0, ibd.coeff$k1, xlim=c(0,1), ylim=c(0,1),
+    xlab="k0", ylab="k1", main="YRI samples (MLE)")
+lines(c(0,1), c(1,0), col="red", lty=2)
+```
+
