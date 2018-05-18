@@ -7,21 +7,21 @@ output: html_document
 knitr::opts_chunk$set(echo = TRUE)
 ```
 
-##Install the package from Bioconductor repository:
+#Install the package from Bioconductor repository:
 ```{r}
 source("http://bioconductor.org/biocLite.R")
 biocLite("gdsfmt")
 biocLite("SNPRelate")
 ```
 
-##Install the development version from Github:
+#Install the development version from Github:
 ```{r}
 library("devtools")
 install_github("zhengxwen/gdsfmt")
 install_github("zhengxwen/SNPRelate")
 ```
 
-## Load the R packages: gdsfmt and SNPRelate
+# Load the R packages: gdsfmt and SNPRelate
 ```{r}
 library(gdsfmt)
 library(SNPRelate)
@@ -33,7 +33,7 @@ vcf.fn <- "/Users/TRGN510/Downloads/ALL.wgs.phase1.projectConsensus.snps.sites.v
 seqVCF2GDS(vcf.fn, "test1.gds")
 ```
 
-#Get Data
+# Get Data
 ```{r}
 genofile <- seqOpen("test.gds")
 ```
@@ -62,7 +62,7 @@ head(seqGetData(genofile, "annotation/info/GP"))
 seqClose(genofile)
 ```
 
-##LD-based SNP pruning
+# LD-based SNP pruning
 ```{r}
 set.seed(1000)
 snpset <- snpgdsLDpruning(genofile, ld.threshold=0.2)
@@ -77,7 +77,7 @@ head(snpset$chr1)
 snpset.id <- unlist(snpset)
 ```
 
-##Principal Component Analysis (PCA)
+# Principal Component Analysis (PCA)
 # Run PCA
 ```{r}
 pca <- snpgdsPCA(genofile, snp.id=snpset.id, num.thread=2)
@@ -97,14 +97,14 @@ head(tab)
 plot(tab$EV2, tab$EV1, xlab="eigenvector 2", ylab="eigenvector 1")
 ```
 
-#Plot the principal component pairs for the first four PCs:
+# Plot the principal component pairs for the first four PCs:
 ```{r}
 lbls <- paste("PC", 1:4, "\n", format(pc.percent[1:4], digits=2), "%", sep="")
 pairs(pca$eigenvect[,1:4], col=tab$pop, labels=lbls)
 ```
 
 
-#Parallel coordinates plot for the top principal components:
+## Parallel coordinates plot for the top principal components:
 ```{r}
 library(MASS)
 datpop <- factor(pop_code)[match(pca$sample.id, sample.id)]
@@ -134,7 +134,7 @@ sample.id <- read.gdsn(index.gdsn(genofile, "sample.id"))
 YRI.id <- sample.id[pop_code == "YRI"]
 ```
 
-#Estimating IBD Using PLINK method of moments (MoM)
+# Estimating IBD Using PLINK method of moments (MoM)
 # Estimate IBD coefficients
 ```{r}
 ibd <- snpgdsIBDMoM(genofile, sample.id=YRI.id, snp.id=snpset.id, 
