@@ -7,14 +7,14 @@ output: html_document
 knitr::opts_chunk$set(echo = TRUE)
 ```
 
-#Install the package from Bioconductor repository:
+# Install the package from Bioconductor repository:
 ```{r}
 source("http://bioconductor.org/biocLite.R")
 biocLite("gdsfmt")
 biocLite("SNPRelate")
 ```
 
-#Install the development version from Github:
+# Install the development version from Github:
 ```{r}
 library("devtools")
 install_github("zhengxwen/gdsfmt")
@@ -33,7 +33,7 @@ vcf.fn <- "/Users/TRGN510/Downloads/ALL.wgs.phase1.projectConsensus.snps.sites.v
 seqVCF2GDS(vcf.fn, "test1.gds")
 ```
 
-# Get Data
+## Get Data
 ```{r}
 genofile <- seqOpen("test.gds")
 ```
@@ -78,12 +78,12 @@ snpset.id <- unlist(snpset)
 ```
 
 # Principal Component Analysis (PCA)
-# Run PCA
+## Run PCA
 ```{r}
 pca <- snpgdsPCA(genofile, snp.id=snpset.id, num.thread=2)
 ```
 
-# Make a data.frame
+## Make a data.frame
 ```{r}
 tab <- data.frame(sample.id = pca$sample.id,
     EV1 = pca$eigenvect[,1],    # the first eigenvector
@@ -92,12 +92,12 @@ tab <- data.frame(sample.id = pca$sample.id,
 head(tab)
 ```
 
-# Draw
+## Draw
 ```{r}
 plot(tab$EV2, tab$EV1, xlab="eigenvector 2", ylab="eigenvector 1")
 ```
 
-# Plot the principal component pairs for the first four PCs:
+## Plot the principal component pairs for the first four PCs:
 ```{r}
 lbls <- paste("PC", 1:4, "\n", format(pc.percent[1:4], digits=2), "%", sep="")
 pairs(pca$eigenvect[,1:4], col=tab$pop, labels=lbls)
@@ -111,7 +111,7 @@ datpop <- factor(pop_code)[match(pca$sample.id, sample.id)]
 parcoord(pca$eigenvect[,1:16], col=datpop)
 ```
 
-# Get chromosome index
+## Get chromosome index
 ```{r}
 chr <- read.gdsn(index.gdsn(genofile, "snp.chromosome"))
 CORR <- snpgdsPCACorr(pca, genofile, eig.which=1:4)
@@ -127,21 +127,14 @@ for (i in 1:2)
 par(savepar)
 ```
 
-
-# YRI samples
-```{r}
-sample.id <- read.gdsn(index.gdsn(genofile, "sample.id"))
-YRI.id <- sample.id[pop_code == "YRI"]
-```
-
 # Estimating IBD Using PLINK method of moments (MoM)
-# Estimate IBD coefficients
+## Estimate IBD coefficients
 ```{r}
 ibd <- snpgdsIBDMoM(genofile, sample.id=YRI.id, snp.id=snpset.id, 
                     maf=0.05, missing.rate=0.05, num.thread=2)
 ```
 
-# Make a data.frame
+## Make a data.frame
 ```{r}
 ibd.coeff <- snpgdsIBDSelection(ibd)
 head(ibd.coeff)
@@ -153,7 +146,7 @@ plot(ibd.coeff$k0, ibd.coeff$k1, xlim=c(0,1), ylim=c(0,1),
 lines(c(0,1), c(1,0), col="red", lty=2)
 ```
 
-# Estimate IBD coefficients
+## Estimate IBD coefficients
 ```{r}
 set.seed(100)
 snp.id <- sample(snpset.id, 1500)  # random 1500 SNPs
@@ -161,7 +154,7 @@ ibd <- snpgdsIBDMLE(genofile, sample.id=YRI.id, snp.id=snp.id,
     maf=0.05, missing.rate=0.05, num.thread=2)
 ```
 
-# Make a data.frame
+## Make a data.frame
 ```{r}
 ibd.coeff <- snpgdsIBDSelection(ibd)
 plot(ibd.coeff$k0, ibd.coeff$k1, xlim=c(0,1), ylim=c(0,1),
